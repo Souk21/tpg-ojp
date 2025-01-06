@@ -17,7 +17,7 @@ The main goal of this project is to provide a simple and fast way to check the n
      > The specification should include the suffix “_test”, “_int” or “_prod”.
      >
      > (From https://opentransportdata.swiss/en/cookbook/open-journey-planner-ojp/#Technical_description)
-- Launch with `node --env-file .env src/main.js`
+- Launch with `npm start` or `node --env-file .env src/main.js`
 
 ## Data
 Data in `data/` is generated using `utils/scrap_stops.js`, with some manual adjustments.
