@@ -52,6 +52,13 @@ console.log(`Listening on http://localhost:${port}`);
 async function handleGenericStopRequest(req, res, fav_stops) {
     // Strip "/s/" from the URL
     let requested_stop = req.url.substring(3);
+    // Url might include "?time="
+    const param_index = requested_stop.indexOf("?");
+    let params;
+    if (param_index !== -1) {
+        params = requested_stop.substring(param_index);
+        requested_stop = requested_stop.substring(0, param_index);
+    }
     let stop = stops.find((s) =>
         s.codes.find((code) => code === requested_stop)
     );
@@ -64,13 +71,10 @@ async function handleGenericStopRequest(req, res, fav_stops) {
             stop = stops.find((s) => s.codes[0] === "8587057");
         }
     }
-    // Url might include "?time="
-    const param_index = requested_stop.indexOf("?");
     if (param_index === -1) {
         // No parameter, so it's a stop request
         await handleStopRequest(stop, res, fav_stops);
     } else {
-        const params = requested_stop.substring(param_index);
         await handleMoreResultsRequest(stop, params, res);
     }
 }
