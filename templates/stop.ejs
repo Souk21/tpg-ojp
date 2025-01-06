@@ -200,13 +200,11 @@
   } else {
     recent = JSON.parse(recent);
   }
-  console.log("Before", recent);
   let code = "<%= stop.codes[0] %>";
   if (recent.includes(code)) {
     recent.splice(recent.indexOf(code), 1);
   }
   recent = [code, ...recent];
   recent.length = Math.min(recent.length, 40);
-  console.log("after", recent);
   window.localStorage.setItem("recent", JSON.stringify(recent));
 </script>
