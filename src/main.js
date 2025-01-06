@@ -27,8 +27,14 @@ const server = http.createServer(async (req, res) => {
     const fav_stops = parseAndSetCookies(req, res);
 
     let url = req.url;
-    if (url === undefined || url === "/") {
-        url = "/s/default";
+    const default_url = "/s/default";
+    if (url === undefined) {
+        url = default_url;
+    }
+    const is_stop = url.startsWith("/s/");
+    const is_list = url.startsWith("/list");
+    if (!is_stop && !is_list) {
+        url = default_url;
     }
     if (url.startsWith("/s/")) {
         await handleGenericStopRequest(req, res, fav_stops);
