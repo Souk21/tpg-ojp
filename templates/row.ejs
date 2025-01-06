@@ -1,0 +1,15 @@
+<div class="<%= departure.not_serviced ? 'canceled ' : '' %>row<%= (departure.line == " 60" || departure.line=="61" )
+    && stop_code==="8587057" ? " F" : "" /* 8587057 is Cornavin */%>" style="--line-color:<%= departure.color.background %>">
+  <div class="direction"><span class="line" style="color:<%= departure.color.text_color %>;">
+      <%= departure.line %>
+    </span><span class="terminus">
+      <%= departure.destination %>
+    </span></div>
+  <div class="time">
+    <% if (!departure.is_realtime) { %>~ <% } %><%- Math.max(0, Math.round(departure.waiting_time)) %>'
+    <span class="hour">
+      <%= new Date(departure.time).toLocaleTimeString("FR-fr", {hour: '2-digit' ,
+                minute:'2-digit'}).replace(":", "h" ) %>
+    </span>
+  </div>
+</div>

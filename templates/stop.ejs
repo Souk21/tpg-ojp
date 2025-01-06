@@ -1,0 +1,212 @@
+<style>
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.1em;
+    min-height: 34px;
+    margin: 0 6px;
+  }
+
+  .row:nth-of-type(odd) {
+    background: #efefef;
+    border-top: 1px solid #e8e8e8;
+    border-bottom: 1px solid #e8e8e8;
+  }
+
+  :not(.row)+.row {
+    margin-top: 7px;
+  }
+
+  .line {
+    flex-basis: 40px;
+    flex-shrink: 0;
+    flex-grow: 0;
+    text-align: center;
+    margin-right: 8px;
+    height: 24px;
+    border-radius: 40px;
+    margin-left: 5px;
+    background: var(--line-color);
+    font-weight: bold;
+    line-height: 26px;
+    font-style: initial;
+  }
+
+  .canceled .line {
+    text-decoration: line-through;
+    text-decoration-color: black;
+    text-decoration-thickness: 3px;
+  }
+
+  .load-more {
+    padding: 6px;
+  }
+
+  .direction {
+    display: flex;
+    align-items: center;
+    flex: 1;
+  }
+
+  .time {
+    display: flex;
+    margin-right: 6px;
+    margin-left: 2px;
+  }
+
+  .hour {
+    margin-left: 12px;
+    font-weight: bold;
+  }
+
+  .row.F {
+    font-weight: 800;
+    background-color: #0000f030;
+  }
+
+  .source {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    color: grey;
+    width: 100%;
+    text-align: center;
+  }
+
+  .source a:any-link {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .canceled {
+    color: #898989;
+    text-decoration: line-through;
+    font-style: italic;
+  }
+</style>
+<% for(let i=0; i < departures.length; i++) { %>
+<%- include("row", {departure: departures[i], stop_code: stop.codes[0]}) %>
+<% } %>
+<% if(departures.length===0) { %>
+<div class="row">Pas de départs</div>
+<% } %>
+<% if(departures.length> 0) { %>
+<div class="row load-more" onclick="loadMore()">Charger plus de résultats...</div>
+<% } %>
+<div class="source">Données brutes <a href="https://opentransportdata.swiss">opentransportdata.swiss</a>
+</div>
+
+<script>
+  const replacements = [{
+      match: "Genève, ",
+      replace: "",
+    },
+    {
+      match: "Grand-Saconnex",
+      replace: "Gd Sac.",
+    },
+    {
+      match: "Divonne-les-Bains",
+      replace: "Divonne",
+    },
+    {
+      match: "gare",
+      replace: "Gare",
+    },
+    {
+      match: " (F)",
+      replace: ""
+    },
+    {
+      match: " (Ain)",
+      replace: "",
+    },
+    {
+      match: "Genève-Aéroport",
+      replace: "Aéroport"
+    },
+    {
+      match: "Centre commercial",
+      replace: "C. Commerical"
+    },
+    {
+      match: "douane",
+      replace: "Douane"
+    },
+    {
+      match: "cité",
+      replace: "Cité"
+    },
+    {
+      match: "village",
+      replace: "Village"
+    },
+  ];
+
+  function replace(str) {
+    for (let replacement of replacements) {
+      str = str.replace(replacement.match, replacement.replace);
+    }
+    return str;
+  }
+
+  function replaceNames() {
+    let rows = document.querySelectorAll(".favorite-line a, .header a:first-child");
+    for (let row of rows) {
+      row.textContent = replace(row.textContent);
+    }
+  }
+  let last_date = new Date("<%= last_date %>");
+
+  function pad(num) {
+    return num.toString().padStart(2, '0');
+  }
+
+  async function loadMore() {
+    const load_more_row = document.querySelector(".load-more");
+    const load_more_on_click = load_more_row.getAttribute("onclick");
+    load_more_row.setAttribute("onclick", "");
+    load_more_row.textContent = "Chargement...";
+    let stop_code = <%= stop.codes[0] %>;
+    let date_str = last_date.getFullYear() + "-" + pad(last_date.getMonth() + 1) + "-" + pad(last_date.getDate()) + "T" + pad(last_date.getHours()) + ":" + pad(last_date.getMinutes()) + ":" + pad(last_date.getSeconds());
+    const base_url = window.location.pathname;
+    let fetched;
+    try {
+      fetched = await fetch(`/s/${stop_code}?time=${date_str}`);
+    } catch (e) {
+      console.error(e);
+      load_more_row.textContent = "Erreur de chargement";
+      return;
+    }
+    if (!fetched.ok) {
+      console.error(fetched);
+      load_more_row.textContent = "Erreur de chargement";
+      return;
+    }
+    const json = await fetched.json();
+    const html = json.html;
+    last_date = new Date(json.last_date);
+    const rows = document.querySelectorAll(".row");
+    penultimate_row = rows[rows.length - 2];
+    penultimate_row.insertAdjacentHTML("afterend", html);
+    replaceNames();
+    load_more_row.setAttribute("onclick", load_more_on_click);
+    load_more_row.textContent = "Charger plus de résultats...";
+  }
+  replaceNames();
+  let recent = window.localStorage.getItem("recent");
+  if (recent === null) {
+    recent = [];
+  } else {
+    recent = JSON.parse(recent);
+  }
+  console.log("Before", recent);
+  let code = "<%= stop.codes[0] %>";
+  if (recent.includes(code)) {
+    recent.splice(recent.indexOf(code), 1);
+  }
+  recent = [code, ...recent];
+  recent.length = Math.min(recent.length, 40);
+  console.log("after", recent);
+  window.localStorage.setItem("recent", JSON.stringify(recent));
+</script>

@@ -1,0 +1,143 @@
+<style>
+  input {
+    height: 30px;
+    width: 100%;
+    margin: 10px 10px 0px 10px;
+  }
+
+  .input-wrapper {
+    display: flex;
+    justify-content: center;
+    position: sticky;
+    top: 0;
+    background: #efefef;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .result {
+    margin-left: 4px;
+    display: flex;
+    align-items: stretch;
+    font-size: 1.1em;
+    height: 35px;
+  }
+
+  .result a:not(.star) {
+    padding-left: 9px;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    padding-left: 9px;
+  }
+
+  .result:nth-child(odd) {
+    background: #efefef;
+    border-top: 1px solid #e8e8e8;
+    border-bottom: 1px solid #e8e8e8;
+  }
+
+  .star {
+    width: 25px;
+    margin-right: 5px;
+    display: flex;
+    align-items: center;
+  }
+
+  #results {
+    margin-top: 12px;
+  }
+
+  .header a:last-child:not(.favorites-open) :not(mask)>path {
+    fill: #009fff;
+  }
+</style>
+
+<div class="input-wrapper"><input type="text" id="input" placeholder="Chercher..." /></div>
+<div id="results"></div>
+<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-star" width="0" height="0" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <defs>
+    <g id="star">
+      <path transform="scale(0.9)translate(2,1)" fill="none" stroke="#999" stroke-width="3" d="m12 21l-1.45-1.3q-2.525-2.275-4.175-3.925T3.75 12.812T2.388 10.4T2 8.15Q2 5.8 3.575 4.225T7.5 2.65q1.3 0 2.475.55T12 4.75q.85-1 2.025-1.55t2.475-.55q2.35 0 3.925 1.575T22 8.15q0 1.15-.387 2.25t-1.363 2.412t-2.625 2.963T13.45 19.7z" />
+    </g>
+    <g id="starFilled">
+      <path transform="scale(0.9)translate(2,1)" style="fill:var(--heart-color);" d="m12 21l-1.45-1.3q-2.525-2.275-4.175-3.925T3.75 12.812T2.388 10.4T2 8.15Q2 5.8 3.575 4.225T7.5 2.65q1.3 0 2.475.55T12 4.75q.85-1 2.025-1.55t2.475-.55q2.35 0 3.925 1.575T22 8.15q0 1.15-.387 2.25t-1.363 2.412t-2.625 2.963T13.45 19.7z" />
+    </g>
+  </defs>
+</svg>
+<script>
+  const stops = <%- stops %>;
+
+  stops.push({
+    name: "Amandine",
+    codes: ["amandine"]
+  });
+
+  function normalize(txt) {
+    return txt.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toLocaleLowerCase()
+      .replace("-", " ")
+      .replace("grand", "gd");
+  }
+
+  function addRemoveFavorite(code) {
+    if (favorites.find(fav => fav.codes[0] === code)) {
+      favorites = favorites.filter(fav => fav.codes[0] !== code);
+    } else {
+      const stop = stops.find(s => s.codes[0] === code);
+      if (!stop) return;
+      favorites.push(stop);
+    }
+    const fav_string = favorites.reduce((acc, cur) => {
+      if (acc !== "") acc += ",";
+      acc += cur.codes[0];
+      return acc;
+    }, "");
+    document.cookie = `fav=${fav_string};expires=Fri, 31 Dec 9999 23:59:59 GMT;SameSite=Lax;Path=/`;
+    refreshFavorites();
+    onInput();
+  }
+
+  let recent = window.localStorage.getItem("recent");
+  if (recent === null) {
+    recent = [];
+  } else {
+    recent = JSON.parse(recent);
+  }
+
+  function onInput() {
+    let matches = [];
+    if (input.value === "") {
+      for (let stop of stops) {
+        if (favorites.find(fav => fav.codes[0] === stop.codes[0]) && !matches.find(m => m.codes[0] === stop.codes[0])) {
+          matches.push(stop);
+        }
+      }
+      for (let recent_to_add of recent) {
+        if (matches.find(m => m.codes[0] === recent_to_add)) continue;
+        const stop = stops.find(s => s.codes[0] === recent_to_add);
+        if (!stop) continue;
+        matches.push(stop);
+      }
+    } else {
+      let terms = normalize(input.value).split(" ");
+      matches = stops.filter(s => {
+        return !terms.some(t => !normalize(s.name).includes(t));
+      });
+    }
+    let html = matches.reduce((acc, cur) => {
+      let starUrl = "#star";
+      if (favorites.find(fav => fav.codes[0] === cur.codes[0])) {
+        starUrl = "#starFilled";
+      }
+      acc += `<div class="result"><a href="/s/${cur.codes[0]}">${cur.name}</a><a href="javascript:void(0)" class="star" onclick="addRemoveFavorite('${cur.codes[0]}')"><svg width="25px" height="25px"><use xlink:href="${starUrl}"/></svg></div></div></div>`;
+      return acc;
+    }, "");
+    results.innerHTML = html;
+    document.querySelector(".scrollable").scrollTop = 0;
+  }
+
+  input.addEventListener("input", () => onInput());
+  onInput();
+  input.focus();
+</script>

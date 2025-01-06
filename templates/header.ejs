@@ -1,0 +1,231 @@
+<style>
+  :root {
+    --heart-color: #d80000;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.1em;
+    flex-basis: 44px;
+    margin: 0 6px;
+    font-size: 1.4em;
+    font-weight: 100;
+    padding: 6px 10px;
+    background: white;
+    border-bottom: 1px solid #ddd;
+    margin: 0;
+  }
+
+  .header a:first-child {
+    font-weight: 800;
+    margin-right: auto;
+    transform: translateY(2px);
+  }
+
+  .header a:first-child::after {
+    content: "Favoris";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    display: flex;
+    align-items: center;
+    opacity: 0;
+    transition: 0.3s opacity;
+  }
+
+  .header a:first-child.favorites-open::after {
+    opacity: 1;
+  }
+
+  .header a:last-child {
+    margin-left: 10px;
+  }
+
+  .icon {
+    display: flex;
+  }
+
+  .icon path {
+    transition: 0.3s fill;
+  }
+
+  .icon:nth-child(2).favorites-open path {
+    fill: var(--heart-color);
+  }
+
+  :any-link {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  #favorites {
+    position: fixed;
+    top: var(--header-height);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: white;
+    font-size: 1.3em;
+    opacity: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: stretch;
+    align-items: stretch;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    font-weight: lighter;
+    z-index: 1;
+  }
+
+  .fav-grid {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .fav-menu {
+    height: 65px;
+    display: flex;
+    justify-content: stretch;
+    background: #778194;
+    color: white;
+  }
+
+  .fav-menu * {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    border-top: 1px solid #ccc;
+  }
+
+  .fav-menu *:first-child {
+    border-right: 1px solid #ccc;
+  }
+
+  #favorites.favorites-open {
+    opacity: 1;
+    pointer-events: initial;
+  }
+
+  .favorite-line {
+    flex: 1;
+    display: flex;
+    justify-content: stretch;
+    align-items: stretch;
+  }
+
+  .favorite-line a {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .favorite-line a:first-child {
+    border-right: 1px solid #ccc;
+  }
+
+  .favorite-line:not(:last-child) {
+    border-bottom: 1px solid #ccc;
+  }
+</style>
+
+<script>
+  let favorites = <%- JSON.stringify(favorites) %>;
+  const stop = <%- stop === undefined ? "undefined" : JSON.stringify(stop) %>;
+  window.addEventListener("resize", () => setHeaderHeight());
+  window.addEventListener("load", () => setHeaderHeight());
+
+  function addRemoveFavorite() {
+    const index = favorites.findIndex(fav => fav.codes[0] === stop.codes[0]);
+    let is_remove = false;
+    if (index === -1) {
+      favorites.push(stop);
+    } else {
+      favorites.splice(index, 1);
+      is_remove = true;
+    }
+    const fav_string = favorites.reduce((acc, cur) => {
+      if (acc !== "") acc += ",";
+      acc += cur.codes[0];
+      return acc;
+    }, "");
+    document.cookie = `fav=${fav_string};expires=Fri, 31 Dec 9999 23:59:59 GMT;SameSite=Lax;Path=/`;
+    const fav_button = document.querySelector("#favorites .fav-menu *:first-child");
+    if (is_remove) {
+      fav_button.innerText = `Ajouter ${stop.name} aux favoris`;
+    } else {
+      fav_button.innerText = `Retirer ${stop.name} des favoris`;
+    }
+    refreshFavorites();
+  }
+
+  function refreshFavorites() {
+    const fav_grid = document.querySelector("#favorites .fav-grid");
+    fav_grid.innerHTML = "";
+    for (let i = 0; i < favorites.length; i += 2) {
+      const line = document.createElement("div");
+      line.classList.add("favorite-line");
+      fav_grid.appendChild(line);
+      const left = document.createElement("a");
+      left.href = `/s/${favorites[i].codes[0]}`;
+      left.innerText = favorites[i].name;
+      const right = document.createElement("a");
+      if (i + 1 < favorites.length) {
+        right.href = `/s/${favorites[i+1].codes[0]}`;
+        right.innerText = favorites[i + 1].name;
+      }
+      line.appendChild(left);
+      line.appendChild(right);
+    }
+  }
+
+  function toggleFavorites() {
+    if (document.querySelector('#favorites .fav-grid').innerHTML === "") {
+      refreshFavorites();
+    }
+    document.querySelector('#favorites').classList.toggle('favorites-open');
+    document.querySelectorAll('.header a').forEach(el => el.classList.toggle('favorites-open'));
+  }
+
+  function setHeaderHeight() {
+    const height = document.querySelector(".header").offsetHeight;
+    document.querySelector("#favorites").style.setProperty("--header-height", `${height}px`);
+  }
+</script>
+
+<div class="header">
+  <a href="<%= link %>">
+    <%= title %>
+  </a>
+  <a href="javascript:void(0)" class="icon" onclick="toggleFavorites()"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="2 2 21 21">
+      <path fill="#333" d="m12 21l-1.45-1.3q-2.525-2.275-4.175-3.925T3.75 12.812T2.388 10.4T2 8.15Q2 5.8 3.575 4.225T7.5 2.65q1.3 0 2.475.55T12 4.75q.85-1 2.025-1.55t2.475-.55q2.35 0 3.925 1.575T22 8.15q0 1.15-.387 2.25t-1.363 2.412t-2.625 2.963T13.45 19.7z" />
+    </svg></a>
+  <a href="/list" class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="2 2 20 20">
+      <path fill="#333" d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5A6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5S14 7.01 14 9.5S11.99 14 9.5 14" />
+    </svg></a>
+</div>
+
+<div id="favorites">
+  <div class="fav-grid"></div>
+  <div class="fav-menu">
+    <% if (stop !== undefined) { %>
+    <a href="javascript:void(0)" onclick="addRemoveFavorite()">
+      <% if (favorites.find(fav => fav.codes[0] === stop.codes[0])) { %>
+      Retirer <%= stop.name %> des favoris
+      <% } else { %>
+      Ajouter <%= stop.name %> aux favoris
+      <% } %>
+    </a>
+    <% } %>
+    <a href="/list">Modifier les favoris</a>
+  </div>
+</div>
