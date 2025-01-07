@@ -152,7 +152,7 @@
   }
 
   function replaceNames() {
-    let rows = document.querySelectorAll(".favorite-line a, .header a:first-child");
+    let rows = document.querySelectorAll(".row .terminus, .header a:first-child");
     for (let row of rows) {
       row.textContent = replace(row.textContent);
     }
