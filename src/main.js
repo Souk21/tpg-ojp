@@ -9,12 +9,11 @@ import { URLSearchParams } from "url";
 
 const base_path = path.resolve("./templates/");
 const port = process.env.PORT || 3000;
+const colors = await readJSON("./data/colors.json");
 
 const stops_raw = await fs.readFile("./data/stops.json");
 const stops = JSON.parse(stops_raw.toString());
 
-const colors_raw = await fs.readFile("./data/colors.json");
-const colors = JSON.parse(colors_raw.toString());
 const default_color = { text_color: "white", background: "black" };
 
 const row_template = await compileTemplate(`${base_path}/row.ejs`);
@@ -161,4 +160,9 @@ async function handleMoreResultsRequest(stop, param_str, res) {
         })
     );
     res.end();
+}
+
+async function readJSON(path) {
+    const data = await fs.readFile(path);
+    return JSON.parse(data.toString());
 }
