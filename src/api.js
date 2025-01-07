@@ -41,7 +41,7 @@ function buildXMLBody(body) {
     });
 }
 
-export async function getSingleStopDepartures(stop_code, time) {
+export async function getSingleStopDepartures(stop_code, time, replacements) {
     const request = buildApiRequest({
         "ojp:OJPStopEventRequest": {
             RequestTimestamp: new Date().toISOString(),
@@ -84,14 +84,14 @@ export async function getSingleStopDepartures(stop_code, time) {
     }
 
     const parsed = parser.parse(fetched_text);
-    return extractDepartures(parsed);
+    return extractDepartures(parsed, replacements);
 }
 
 // time can be undefined for current time
-export async function getDepartures(stop_codes, time) {
+export async function getDepartures(stop_codes, time, replacements) {
     // Query API in parallel for each stop code
     const promises = stop_codes.map(
-        async (code) => await getSingleStopDepartures(code, time)
+        async (code) => await getSingleStopDepartures(code, time, replacements)
     );
     const departures = await Promise.all(promises);
     return departures.flat().sort((a, b) => a.time - b.time);
@@ -163,7 +163,7 @@ function extractStopCodes(parsed) {
     });
 }
 
-function extractDepartures(parsed) {
+function extractDepartures(parsed, replacements) {
     const stop_event_delivery =
         parsed["siri:OJP"]["siri:OJPResponse"]["siri:ServiceDelivery"][
             "ojp:OJPStopEventDelivery"
@@ -189,8 +189,10 @@ function extractDepartures(parsed) {
         );
         const line =
             stop_event["ojp:Service"]["ojp:PublishedLineName"]["ojp:Text"];
-        const destination =
-            stop_event["ojp:Service"]["ojp:DestinationText"]["ojp:Text"];
+        const destination = replace(
+            replacements,
+            stop_event["ojp:Service"]["ojp:DestinationText"]["ojp:Text"]
+        );
         const not_serviced =
             stop_event["ojp:ThisCall"]["ojp:CallAtStop"]["ojp:NotServicedStop"];
         const waiting_time = (time - now) / 60000;
@@ -207,4 +209,11 @@ function extractDepartures(parsed) {
 
 export function getLastDate(departures) {
     return departures.reduce((acc, cur) => Math.max(acc, cur.time), -Infinity);
+}
+
+export function replace(replacements, str) {
+    for (let replacement of replacements) {
+        str = str.replace(replacement.match, replacement.replace);
+    }
+    return str;
 }

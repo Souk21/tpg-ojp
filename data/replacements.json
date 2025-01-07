@@ -1,0 +1,50 @@
+[
+    {
+        "match": "Genève, ",
+        "replace": ""
+    },
+    {
+        "match": "Grand-Saconnex",
+        "replace": "Gd Sac."
+    },
+    {
+        "match": "Divonne-les-Bains",
+        "replace": "Divonne"
+    },
+    {
+        "match": "gare",
+        "replace": "Gare"
+    },
+    {
+        "match": " (F)",
+        "replace": ""
+    },
+    {
+        "match": " (Ain)",
+        "replace": ""
+    },
+    {
+        "match": "Genève-Aéroport",
+        "replace": "Aéroport"
+    },
+    {
+        "match": "Centre commercial",
+        "replace": "C. Commerical"
+    },
+    {
+        "match": "douane",
+        "replace": "Douane"
+    },
+    {
+        "match": "cité",
+        "replace": "Cité"
+    },
+    {
+        "match": "village",
+        "replace": "Village"
+    },
+    {
+        "match": " GE,",
+        "replace": ","
+    }
+]

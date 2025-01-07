@@ -34,7 +34,7 @@
 </head>
 
 <body>
-  <%- include("header", {favorites, stop, title: is_list ? "Recherche" : stop.name, link: `${is_list ? "list" : "/s/"+location}`}) %>
+  <%- include("header", {favorites, stop, title: is_list ? "Recherche" : short_name, link: `${is_list ? "list" : "/s/"+location}`}) %>
   <div class="scrollable">
     <% if (is_list) { %>
     <%- include("list", {stops, favorites, location}) %>

@@ -98,69 +98,6 @@
 </div>
 
 <script>
-  const replacements = [{
-      match: "Genève, ",
-      replace: "",
-    },
-    {
-      match: "Grand-Saconnex",
-      replace: "Gd Sac.",
-    },
-    {
-      match: "Divonne-les-Bains",
-      replace: "Divonne",
-    },
-    {
-      match: "gare",
-      replace: "Gare",
-    },
-    {
-      match: " (F)",
-      replace: ""
-    },
-    {
-      match: " (Ain)",
-      replace: "",
-    },
-    {
-      match: "Genève-Aéroport",
-      replace: "Aéroport"
-    },
-    {
-      match: "Centre commercial",
-      replace: "C. Commerical"
-    },
-    {
-      match: "douane",
-      replace: "Douane"
-    },
-    {
-      match: "cité",
-      replace: "Cité"
-    },
-    {
-      match: "village",
-      replace: "Village"
-    },
-    {
-      match: " GE,",
-      replace: ","
-    },
-  ];
-
-  function replace(str) {
-    for (let replacement of replacements) {
-      str = str.replace(replacement.match, replacement.replace);
-    }
-    return str;
-  }
-
-  function replaceNames() {
-    let rows = document.querySelectorAll(".row .terminus, .header a:first-child");
-    for (let row of rows) {
-      row.textContent = replace(row.textContent);
-    }
-  }
   let last_date = new Date(<%= last_date %>);
 
   function pad(num) {
@@ -194,11 +131,9 @@
     const rows = document.querySelectorAll(".row");
     penultimate_row = rows[rows.length - 2];
     penultimate_row.insertAdjacentHTML("afterend", html);
-    replaceNames();
     load_more_row.setAttribute("onclick", load_more_on_click);
     load_more_row.textContent = "Charger plus de résultats...";
   }
-  replaceNames();
   let recent = window.localStorage.getItem("recent");
   if (recent === null) {
     recent = [];
