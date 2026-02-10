@@ -4,6 +4,9 @@
   }
 
   .header {
+    position: sticky;
+    top: 0;
+    z-index: 3;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -79,7 +82,7 @@
     transition: opacity 0.3s;
     pointer-events: none;
     font-weight: lighter;
-    z-index: 1;
+    z-index: 2;
   }
 
   .fav-grid {
@@ -199,7 +202,7 @@
 
   function setHeaderHeight() {
     const height = document.querySelector(".header").offsetHeight;
-    document.querySelector("#favorites").style.setProperty("--header-height", `${height}px`);
+    document.documentElement.style.setProperty("--header-height", `${height}px`);
   }
 </script>
 
