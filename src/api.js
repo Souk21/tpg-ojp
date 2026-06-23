@@ -2,7 +2,7 @@
 import { XMLBuilder, XMLParser } from "fast-xml-parser";
 
 const api_key = process.env.API_KEY;
-const api_url = "https://api.opentransportdata.swiss/ojp2020";
+const api_url = "https://api.opentransportdata.swiss/ojp20";
 const parser = new XMLParser();
 
 function buildApiRequest(body) {
@@ -23,17 +23,13 @@ function buildXMLBody(body) {
     });
     return builder.build({
         OJP: {
-            ["_xmlns:xsi"]: "http://www.w3.org/2001/XMLSchema-instance",
-            ["_xmlns:xsd"]: "http://www.w3.org/2001/XMLSchema",
-            ["_xmlns"]: "http://www.siri.org.uk/siri",
-            ["_version"]: "1.0",
-            ["_xmlns:ojp"]: "http://www.vdv.de/ojp",
-            ["_xsi:schemaLocation"]:
-                "http://www.siri.org.uk/siri ../ojp-xsd-v1.0/OJP.xsd",
+            ["_xmlns"]: "http://www.vdv.de/ojp",
+            ["_xmlns:siri"]: "http://www.siri.org.uk/siri",
+            ["_version"]: "2.0",
             OJPRequest: {
-                ServiceRequest: {
-                    RequestTimestamp: new Date().toISOString(),
-                    RequestorRef: process.env.REQUESTOR_REF,
+                "siri:ServiceRequest": {
+                    "siri:RequestTimestamp": new Date().toISOString(),
+                    "siri:RequestorRef": process.env.REQUESTOR_REF,
                     ...body,
                 },
             },
@@ -43,27 +39,27 @@ function buildXMLBody(body) {
 
 export async function getSingleStopDepartures(stop_code, time, replacements) {
     const request = buildApiRequest({
-        "ojp:OJPStopEventRequest": {
-            RequestTimestamp: new Date().toISOString(),
-            "ojp:Location": {
-                "ojp:PlaceRef": {
-                    StopPlaceRef: stop_code,
+        OJPStopEventRequest: {
+            "siri:RequestTimestamp": new Date().toISOString(),
+            Location: {
+                PlaceRef: {
+                    "siri:StopPointRef": stop_code,
                     // This is mandatory, but it can be any string
-                    "ojp:LocationName": {
-                        "ojp:Text": "Zürich",
+                    Name: {
+                        "Text": "",
                     },
                 },
-                "ojp:DepArrTime": time,
+                DepArrTime: time,
             },
-            "ojp:Params": {
-                "ojp:NumberOfResults": 100,
-                "ojp:StopEventType": "departure",
-                "ojp:IncludeRealtimeData": true,
-                "ojp:IncludePreviousCalls": false,
-                "ojp:IncludeOnwardCalls": false,
-                "ojp:OperatorFilter": {
-                    "ojp:OperatorRef": "Transports Publics Genevois",
-                    "ojp:Exclude": false,
+            Params: {
+                NumberOfResults: 100,
+                StopEventType: "departure",
+                UseRealtimeData: "full",
+                IncludePreviousCalls: false,
+                IncludeOnwardCalls: false,
+                OperatorFilter: {
+                    OperatorRef: "Transports Publics Genevois",
+                    Exclude: false,
                 },
             },
         },
@@ -78,7 +74,7 @@ export async function getSingleStopDepartures(stop_code, time, replacements) {
     const fetched_text = await fetched.text();
     if (!fetched.ok) {
         console.log(
-            `API ERROR: [${fetched.status}] ${fetched.statusText}\n${fetched_text}`
+            `API ERROR: [${fetched.status}] ${fetched.statusText}\n${fetched_text}`,
         );
         return [];
     }
@@ -91,7 +87,7 @@ export async function getSingleStopDepartures(stop_code, time, replacements) {
 export async function getDepartures(stop_codes, time, replacements) {
     // Query API in parallel for each stop code
     const promises = stop_codes.map(
-        async (code) => await getSingleStopDepartures(code, time, replacements)
+        async (code) => await getSingleStopDepartures(code, time, replacements),
     );
     const departures = await Promise.all(promises);
     return departures.flat().sort((a, b) => a.time - b.time);
@@ -121,7 +117,7 @@ export async function getStopCodes(stop_name) {
     const fetched_text = await fetched.text();
     if (!fetched.ok) {
         console.log(
-            `API ERROR: [${fetched.status}] ${fetched.statusText}\n${fetched_text}`
+            `API ERROR: [${fetched.status}] ${fetched.statusText}\n${fetched_text}`,
         );
         return [];
     }
@@ -165,36 +161,34 @@ function extractStopCodes(parsed) {
 
 function extractDepartures(parsed, replacements) {
     const stop_event_delivery =
-        parsed["siri:OJP"]["siri:OJPResponse"]["siri:ServiceDelivery"][
-            "ojp:OJPStopEventDelivery"
+        parsed["OJP"]["OJPResponse"]["siri:ServiceDelivery"][
+            "OJPStopEventDelivery"
         ];
-    let stop_events_raw = stop_event_delivery["ojp:StopEventResult"];
-    const status = stop_event_delivery["siri:Status"];
-    if (!status) return [];
+    let stop_events_raw = stop_event_delivery["StopEventResult"];
     // If the API returns only one stop event, XMLParser will not return an array
     if (!Array.isArray(stop_events_raw)) {
         stop_events_raw = [stop_events_raw];
     }
-    const stop_events = stop_events_raw.map((s) => s["ojp:StopEvent"]);
+    const stop_events = stop_events_raw.map((s) => s["StopEvent"]);
     const now = Date.now();
     return stop_events.map((stop_event) => {
         const service_departure =
-            stop_event["ojp:ThisCall"]["ojp:CallAtStop"][
-                "ojp:ServiceDeparture"
+            stop_event["ThisCall"]["CallAtStop"][
+                "ServiceDeparture"
             ];
-        const estimated_time = service_departure["ojp:EstimatedTime"];
+        const estimated_time = service_departure["EstimatedTime"];
         const is_realtime = estimated_time !== undefined;
         const time = new Date(
-            estimated_time ?? service_departure["ojp:TimetabledTime"]
+            estimated_time ?? service_departure["TimetabledTime"],
         );
         const line =
-            stop_event["ojp:Service"]["ojp:PublishedLineName"]["ojp:Text"];
+            stop_event["Service"]["PublishedServiceName"]["Text"];
         const destination = replace(
             replacements,
-            stop_event["ojp:Service"]["ojp:DestinationText"]["ojp:Text"]
+            stop_event["Service"]["DestinationText"]["Text"],
         );
         const not_serviced =
-            stop_event["ojp:ThisCall"]["ojp:CallAtStop"]["ojp:NotServicedStop"];
+            stop_event["ThisCall"]["CallAtStop"]["NotServicedStop"];
         const waiting_time = (time - now) / 60000;
         return {
             destination,
