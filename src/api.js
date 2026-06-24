@@ -54,7 +54,7 @@ export async function getSingleStopDepartures(stop_code, time, replacements) {
             Params: {
                 NumberOfResults: 100,
                 StopEventType: "departure",
-                UseRealtimeData: "full",
+                UseRealtimeData: "explanatory",
                 IncludePreviousCalls: false,
                 IncludeOnwardCalls: false,
                 OperatorFilter: {
